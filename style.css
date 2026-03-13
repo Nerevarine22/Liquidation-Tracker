@@ -1,0 +1,74 @@
+/* Custom styles for Liquidation Tracker */
+
+:root {
+    --accent-glow: rgba(59, 130, 246, 0.3);
+}
+
+body {
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #26262e;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Glassmorphism focus */
+input:focus {
+    box-shadow: 0 0 15px var(--accent-glow);
+}
+
+/* Active side buttons */
+.active-side {
+    box-shadow: 0 0 15px currentColor;
+    opacity: 1 !important;
+}
+
+/* Custom cards */
+.position-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.position-card:hover {
+    background-color: #1a1a1f;
+    transform: translateX(4px);
+}
+
+/* Progress bar for liquidation risk */
+.risk-bar {
+    height: 4px;
+    background: #26262e;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.risk-level {
+    height: 100%;
+    transition: width 0.5s ease;
+}

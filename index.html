@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquidation Tracker | Моніторинг позицій</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#050505',
+                            800: '#0f0f12',
+                            700: '#1a1a1f',
+                            600: '#26262e'
+                        },
+                        accent: {
+                            primary: '#3b82f6',
+                            secondary: '#8b5cf6',
+                            danger: '#ef4444',
+                            success: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-900 text-gray-100 font-sans min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <header class="flex justify-between items-center mb-12">
+            <div>
+                <h1 class="text-4xl font-heading font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
+                    Liquidation Tracker
+                </h1>
+                <p class="text-gray-400 mt-2">Відстежуйте свої позиції та рівні ліквідації в реальному часі</p>
+            </div>
+            <div id="stats-summary" class="flex gap-6">
+                <!-- Статистика буде тут -->
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Форма додавання -->
+            <section class="lg:col-span-1">
+                <div class="bg-dark-800 border border-dark-600 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+                    <h2 class="text-xl font-heading font-semibold mb-6">Додати позицію</h2>
+                    <form id="position-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Тікер (напр. BTC, ETH)</label>
+                            <input type="text" id="ticker-input" required
+                                class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors uppercase"
+                                placeholder="BTC">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Ціна входу</label>
+                                <input type="number" id="entry-input" step="any" required
+                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Плече (Leverage)</label>
+                                <input type="number" id="leverage-input" min="1" max="125" value="10" required
+                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    placeholder="10x">
+                            </div>
+                        </div>
+                        <div class="flex gap-4 pt-2">
+                            <button type="button" id="side-long" class="flex-1 py-3 rounded-xl bg-accent-success/20 text-accent-success border border-accent-success/50 font-semibold hover:bg-accent-success/30 transition-all active-side">LONG</button>
+                            <button type="button" id="side-short" class="flex-1 py-3 rounded-xl bg-dark-700 text-gray-400 border border-dark-600 font-semibold hover:bg-accent-danger/10 hover:text-accent-danger hover:border-accent-danger/50 transition-all">SHORT</button>
+                        </div>
+                        <button type="submit" class="w-full bg-accent-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-accent-primary/20 transition-all mt-4">
+                            Додати до трекера
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Список позицій -->
+            <section class="lg:col-span-2">
+                <div class="bg-dark-800 border border-dark-600 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="px-6 py-4 border-b border-dark-600 flex justify-between items-center">
+                        <h2 class="text-xl font-heading font-semibold">Ваші позиції</h2>
+                        <span id="position-count" class="bg-dark-600 text-xs px-2 py-1 rounded-md text-gray-400">0 активних</span>
+                    </div>
+                    <div id="positions-list" class="divide-y divide-dark-600 min-h-[400px]">
+                        <!-- Тут будуть картки позицій -->
+                        <div class="flex flex-col items-center justify-center h-full text-gray-500 py-20">
+                            <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <p>Поки немає активних позицій</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Модалка підвантаження ціни -->
+        <div id="loader" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-dark-800 p-8 rounded-2xl border border-dark-600 flex flex-col items-center">
+                <div class="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-lg font-medium">Отримання даних з DEX Screener...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+</body>
+</html>
