@@ -1,128 +1,133 @@
 <!DOCTYPE html>
-<html lang="uk" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liquidation Tracker | Моніторинг позицій</title>
+    <title>Liquidation Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        dark: {
-                            900: '#050505',
-                            800: '#0f0f12',
-                            700: '#1a1a1f',
-                            600: '#26262e'
+                        mono: {
+                            50: '#f8f9fa',
+                            100: '#e9ecef',
+                            200: '#dee2e6',
+                            300: '#ced4da',
+                            400: '#adb5bd',
+                            500: '#6c757d',
+                            600: '#495057',
+                            700: '#343a40',
+                            800: '#212529',
+                            900: '#1a1d20' // Slightly darker for extreme background
                         },
                         accent: {
-                            primary: '#3b82f6',
-                            secondary: '#8b5cf6',
                             danger: '#ef4444',
                             success: '#10b981'
                         }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        heading: ['Outfit', 'sans-serif']
+                        sans: ['"Exo 2"', 'sans-serif'],
+                        heading: ['"Exo 2"', 'sans-serif']
                     }
                 }
             }
         }
     </script>
+    <style>
+        body { font-optical-sizing: auto; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-dark-900 text-gray-100 font-sans min-h-screen">
-    <div class="max-w-6xl mx-auto px-4 py-8">
-        <header class="flex justify-between items-center mb-12">
-            <div>
-                <h1 class="text-4xl font-heading font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-                    Liquidation Tracker
-                </h1>
-                <p class="text-gray-400 mt-2">Відстежуйте свої позиції та рівні ліквідації в реальному часі</p>
-            </div>
-            <div id="stats-summary" class="flex gap-6">
-                <!-- Статистика буде тут -->
+<body class="bg-mono-900 text-mono-100 font-sans min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <header class="mb-8 flex justify-between items-center">
+            <h1 class="text-lg font-heading font-bold text-mono-300 tracking-tight uppercase">
+                Liquidation Tracker
+            </h1>
+            <!-- Refresh Ring -->
+            <div class="relative w-6 h-6 group cursor-pointer" id="refresh-container">
+                <svg class="w-full h-full -rotate-90">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" class="text-mono-800" />
+                    <circle id="refresh-ring" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="transparent" 
+                        stroke-dasharray="62.83" stroke-dashoffset="0" class="text-mono-300 transition-all duration-1000 ease-linear" />
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div class="w-1 h-1 bg-mono-300 rounded-full"></div>
+                </div>
             </div>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Форма додавання -->
-            <section class="lg:col-span-1">
-                <div class="bg-dark-800 border border-dark-600 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
-                    <h2 class="text-xl font-heading font-semibold mb-6">Додати позицію</h2>
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Add Form -->
+            <section>
+                <div class="bg-mono-800 rounded-lg p-6 shadow-2xl">
+                    <h2 class="text-sm font-heading font-semibold mb-6 text-mono-400 uppercase tracking-wider">Add Position</h2>
                     <form id="position-form" class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-3">
                             <div class="col-span-2">
-                                <label class="block text-sm text-gray-400 mb-1">Тікер токена</label>
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Token Ticker</label>
                                 <input type="text" id="ticker-input" required
-                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors uppercase"
+                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white uppercase placeholder-mono-600"
                                     placeholder="BTC">
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-400 mb-1">Ціна входу</label>
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Entry Price</label>
                                 <input type="number" id="entry-input" step="any" required
-                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
                                     placeholder="0.00">
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-400 mb-1">Плече (Leverage)</label>
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Leverage</label>
                                 <input type="number" id="leverage-input" min="1" max="125" value="10" required
-                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
                                     placeholder="10x">
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-400 mb-1">Розмір ($)</label>
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Size ($)</label>
                                 <input type="number" id="size-input" step="any" required
-                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
                                     placeholder="1000">
                             </div>
                             <div>
-                                <label class="block text-sm text-gray-400 mb-1">Депозит ($)</label>
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Deposit ($)</label>
                                 <input type="number" id="margin-input" step="any" required
-                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
                                     placeholder="100">
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-accent-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-accent-primary/20 transition-all mt-4">
-                            Розрахувати рівні
+                        <button type="submit" class="w-full bg-mono-100 hover:bg-white text-mono-900 font-bold py-3 rounded-md transition-all mt-4 uppercase text-xs tracking-widest">
+                            Calculate Levels
                         </button>
                     </form>
                 </div>
             </section>
 
-            <!-- Список позицій -->
-            <section class="lg:col-span-2">
-                <div class="bg-dark-800 border border-dark-600 rounded-2xl overflow-hidden shadow-xl">
-                    <div class="px-6 py-4 border-b border-dark-600 flex justify-between items-center">
-                        <h2 class="text-xl font-heading font-semibold">Ваші позиції</h2>
-                        <span id="position-count" class="bg-dark-600 text-xs px-2 py-1 rounded-md text-gray-400">0 активних</span>
+            <!-- Positions List -->
+            <section>
+                <div class="bg-mono-800 rounded-lg overflow-hidden flex flex-col min-h-[400px]">
+                    <div class="px-6 py-4 flex justify-between items-center bg-mono-700/30">
+                        <h2 class="text-xs font-heading font-semibold text-mono-400 uppercase tracking-widest">Your Positions</h2>
+                        <span id="position-count" class="text-[10px] text-mono-500 font-bold">0 active</span>
                     </div>
-                    <div id="positions-list" class="divide-y divide-dark-600 min-h-[400px]">
-                        <!-- Тут будуть картки позицій -->
-                        <div class="flex flex-col items-center justify-center h-full text-gray-500 py-20">
-                            <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div id="positions-list" class="p-4 space-y-4 flex-1">
+                        <!-- Position cards will be here -->
+                        <div class="flex flex-col items-center justify-center h-full text-mono-600 py-20">
+                            <svg class="w-12 h-12 mb-3 opacity-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                             </svg>
-                            <p>Поки немає активних позицій</p>
+                            <p class="text-[10px] uppercase tracking-widest font-bold">No active positions yet</p>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
-
-        <!-- Модалка підвантаження ціни -->
-        <div id="loader" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div class="bg-dark-800 p-8 rounded-2xl border border-dark-600 flex flex-col items-center">
-                <div class="w-12 h-12 border-4 border-accent-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-lg font-medium">Отримання даних з DEX Screener...</p>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="/app.js"></script>
