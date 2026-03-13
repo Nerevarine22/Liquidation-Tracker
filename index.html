@@ -57,13 +57,13 @@
                 <div class="bg-dark-800 border border-dark-600 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
                     <h2 class="text-xl font-heading font-semibold mb-6">Додати позицію</h2>
                     <form id="position-form" class="space-y-4">
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-1">Тікер (напр. BTC, ETH)</label>
-                            <input type="text" id="ticker-input" required
-                                class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors uppercase"
-                                placeholder="BTC">
-                        </div>
                         <div class="grid grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-sm text-gray-400 mb-1">Тікер токена</label>
+                                <input type="text" id="ticker-input" required
+                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors uppercase"
+                                    placeholder="BTC">
+                            </div>
                             <div>
                                 <label class="block text-sm text-gray-400 mb-1">Ціна входу</label>
                                 <input type="number" id="entry-input" step="any" required
@@ -76,13 +76,21 @@
                                     class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
                                     placeholder="10x">
                             </div>
-                        </div>
-                        <div class="flex gap-4 pt-2">
-                            <button type="button" id="side-long" class="flex-1 py-3 rounded-xl bg-accent-success/20 text-accent-success border border-accent-success/50 font-semibold hover:bg-accent-success/30 transition-all active-side">LONG</button>
-                            <button type="button" id="side-short" class="flex-1 py-3 rounded-xl bg-dark-700 text-gray-400 border border-dark-600 font-semibold hover:bg-accent-danger/10 hover:text-accent-danger hover:border-accent-danger/50 transition-all">SHORT</button>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Розмір ($)</label>
+                                <input type="number" id="size-input" step="any" required
+                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    placeholder="1000">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-1">Депозит ($)</label>
+                                <input type="number" id="margin-input" step="any" required
+                                    class="w-full bg-dark-700 border border-dark-600 rounded-xl px-4 py-3 focus:outline-none focus:border-accent-primary transition-colors"
+                                    placeholder="100">
+                            </div>
                         </div>
                         <button type="submit" class="w-full bg-accent-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-accent-primary/20 transition-all mt-4">
-                            Додати до трекера
+                            Розрахувати рівні
                         </button>
                     </form>
                 </div>
