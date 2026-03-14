@@ -90,26 +90,20 @@
                                     placeholder="0.00">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Leverage</label>
-                                <input type="number" id="leverage-input" min="1" max="125" value="10" required
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Long Liq Price</label>
+                                <input type="number" id="long-liq-input" step="any" required
                                     class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
-                                    placeholder="10x">
+                                    placeholder="0.00">
                             </div>
                             <div>
-                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Size ($)</label>
-                                <input type="number" id="size-input" step="any" required
+                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Short Liq Price</label>
+                                <input type="number" id="short-liq-input" step="any" required
                                     class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
-                                    placeholder="1000">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-mono-500 mb-1 uppercase tracking-widest font-bold">Deposit ($)</label>
-                                <input type="number" id="margin-input" step="any" required
-                                    class="w-full bg-mono-700 rounded-md px-4 py-3 focus:outline-none focus:ring-1 focus:ring-mono-500 transition-all text-white placeholder-mono-600"
-                                    placeholder="100">
+                                    placeholder="0.00">
                             </div>
                         </div>
                         <button type="submit" class="w-full bg-mono-100 hover:bg-white text-mono-900 font-bold py-3 rounded-md transition-all mt-4 uppercase text-xs tracking-widest">
-                            Calculate Levels
+                            Add Position
                         </button>
                     </form>
                 </div>

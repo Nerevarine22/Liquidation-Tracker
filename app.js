@@ -10,9 +10,8 @@ let currentSide = 'LONG';
 const form = document.getElementById('position-form');
 const tickerInput = document.getElementById('ticker-input');
 const entryInput = document.getElementById('entry-input');
-const leverageInput = document.getElementById('leverage-input');
-const sizeInput = document.getElementById('size-input');
-const marginInput = document.getElementById('margin-input');
+const longLiqInput = document.getElementById('long-liq-input');
+const shortLiqInput = document.getElementById('short-liq-input');
 const positionsList = document.getElementById('positions-list');
 const countBadge = document.getElementById('position-count');
 
@@ -78,13 +77,8 @@ async function addPosition(e) {
 
     const ticker = tickerInput.value.trim().toUpperCase();
     const entry = parseFloat(entryInput.value);
-    const leverage = parseFloat(leverageInput.value);
-    const size = parseFloat(sizeInput.value);
-    const margin = parseFloat(marginInput.value);
-
-    // Розрахунок ліквідації для обох сторін
-    const longLiq = entry * (1 - (1 / leverage));
-    const shortLiq = entry * (1 + (1 / leverage));
+    const longLiq = parseFloat(longLiqInput.value);
+    const shortLiq = parseFloat(shortLiqInput.value);
 
     let currentPrice = entry;
     const fetchedPrice = await fetchTokenPrice(ticker);
@@ -94,9 +88,6 @@ async function addPosition(e) {
         id: Date.now(),
         ticker,
         entry,
-        leverage,
-        size,
-        margin,
         longLiq,
         shortLiq,
         currentPrice,
@@ -137,6 +128,10 @@ function updateUI() {
     positionsList.innerHTML = '';
 
     positions.forEach(pos => {
+        const distToLong = Math.abs(pos.currentPrice - pos.longLiq);
+        const distToShort = Math.abs(pos.currentPrice - pos.shortLiq);
+        const isLongCloser = distToLong < distToShort;
+
         const card = document.createElement('div');
         card.className = 'position-card p-5 animate-fade-in bg-mono-800 rounded-md shadow-lg';
         
@@ -144,7 +139,6 @@ function updateUI() {
             <div class="flex justify-between items-start mb-5">
                 <div class="flex items-center gap-2">
                     <span class="text-base font-heading font-extrabold text-white tracking-widest uppercase">${pos.ticker}/USD</span>
-                    <span class="bg-mono-700 px-2 py-0.5 rounded-sm text-[9px] text-mono-400 font-bold uppercase tracking-tighter">${pos.leverage}x</span>
                 </div>
                 <div class="flex flex-col items-end">
                     <button onclick="deletePosition(${pos.id})" class="text-mono-500 hover:text-white transition-colors mb-2">
@@ -158,17 +152,21 @@ function updateUI() {
 
             <div class="space-y-3">
                 <!-- LONG SIDE -->
-                <div class="flex justify-between items-center bg-mono-700/50 p-4 rounded-md">
+                <div class="flex justify-between items-center ${isLongCloser ? 'bg-accent-danger/20 ring-1 ring-accent-danger/50' : 'bg-mono-700/50'} p-4 rounded-md transition-all">
                     <div>
-                        <p class="text-[9px] text-mono-500 uppercase tracking-[0.2em] font-bold mb-1">Long Liquidation</p>
+                        <p class="text-[9px] ${isLongCloser ? 'text-accent-danger' : 'text-mono-500'} uppercase tracking-[0.2em] font-bold mb-1 flex items-center gap-2">
+                            Long Liq ${isLongCloser ? '<span class="animate-pulse">● CLOSET</span>' : ''}
+                        </p>
                         <p class="text-lg font-bold text-mono-100">$${pos.longLiq.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                     </div>
                 </div>
 
                 <!-- SHORT SIDE -->
-                <div class="flex justify-between items-center bg-mono-700/50 p-4 rounded-md">
+                <div class="flex justify-between items-center ${!isLongCloser ? 'bg-accent-danger/20 ring-1 ring-accent-danger/50' : 'bg-mono-700/50'} p-4 rounded-md transition-all">
                     <div>
-                        <p class="text-[9px] text-mono-500 uppercase tracking-[0.2em] font-bold mb-1">Short Liquidation</p>
+                        <p class="text-[9px] ${!isLongCloser ? 'text-accent-danger' : 'text-mono-500'} uppercase tracking-[0.2em] font-bold mb-1 flex items-center gap-2">
+                            Short Liq ${!isLongCloser ? '<span class="animate-pulse">● CLOSET</span>' : ''}
+                        </p>
                         <p class="text-lg font-bold text-mono-100">$${pos.shortLiq.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                     </div>
                 </div>
@@ -176,7 +174,7 @@ function updateUI() {
             
             <div class="mt-5 pt-4 border-t border-mono-700/50 flex justify-between text-[9px] uppercase tracking-widest text-mono-500 font-bold">
                 <span>Entry: $${pos.entry.toLocaleString()}</span>
-                <span>Deposit: $${pos.margin.toLocaleString()}</span>
+                <span class="text-mono-100">${isLongCloser ? 'Long is closer' : 'Short is closer'}</span>
             </div>
         `;
         positionsList.appendChild(card);
