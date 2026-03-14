@@ -4,6 +4,7 @@ import { ChevronDown, RefreshCw, X } from 'lucide-react';
 
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2';
 const REFRESH_INTERVAL = 10000;
+const POSITIONS_STORAGE_KEY = 'liq-tracker.positions';
 
 type Position = {
   id: string;
@@ -232,7 +233,18 @@ function PositionCard({
 }
 
 export default function LiquidationTrackerScreen() {
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [positions, setPositions] = useState<Position[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem(POSITIONS_STORAGE_KEY);
+      return stored ? (JSON.parse(stored) as Position[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [feedIds] = useState(new Map<string, string>());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
@@ -270,6 +282,14 @@ export default function LiquidationTrackerScreen() {
       return null;
     }
   };
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(positions));
+    } catch {
+      // Ignore storage write failures and keep the UI functional.
+    }
+  }, [positions]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
