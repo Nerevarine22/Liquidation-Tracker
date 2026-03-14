@@ -85,7 +85,7 @@ function AddForm({
       <div className={`flex w-full items-center ${open ? 'justify-between gap-3' : 'justify-end'}`}>
         {open && (
           <div>
-            <p className="text-2xl text-white">Builder</p>
+            <p className="text-2xl text-white/84">Builder</p>
           </div>
         )}
         <button
@@ -176,12 +176,12 @@ function PositionCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className="rounded-[26px] bg-black p-4 text-white"
+      className="rounded-[26px] bg-black px-[2px] py-4 text-white"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[13px] uppercase tracking-[0.18em] text-white/45">{position.token}</p>
-          <p className="mt-3 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-white">
+          <p className="mt-2 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-white">
             {position.price > 100 ? position.price.toFixed(0) : position.price.toFixed(2)}
           </p>
           <p className="mt-2 text-sm text-white/42">Entry {formatMoney(position.entry)}</p>
@@ -194,7 +194,7 @@ function PositionCard({
         </button>
       </div>
 
-      <div className="mt-4 bg-[#080808] p-0">
+      <div className="mt-3 bg-[#080808] p-0">
         <div className="relative h-4 rounded-full bg-[#1a1a1a]">
           <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-[#69c16f]" />
           <div className="absolute inset-y-0 right-0 w-[36%] rounded-full bg-[#ff5a4a]" />
@@ -206,7 +206,7 @@ function PositionCard({
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-[6px]">
           <div className="rounded-[20px] bg-[#0d140e] p-3">
             <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Long liq</p>
             <p className="mt-2 text-[26px] leading-none text-[#89dc8b]">{formatMoney(position.longLiq)}</p>
@@ -311,10 +311,10 @@ export default function LiquidationTrackerScreen() {
 
         <AddForm open={formOpen} onToggle={() => setFormOpen((current) => !current)} onAdd={addPosition} />
 
-        <section className="rounded-[26px] bg-black p-4 text-white">
+        <section className="rounded-[26px] bg-black px-[2px] py-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="mt-1 text-2xl text-white">Watchlist</p>
+              <p className="mt-1 text-2xl text-white/84">Watchlist</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-white/58">
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[#69bbff]' : ''} />
