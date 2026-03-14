@@ -1,311 +1,393 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, AlertTriangle, RefreshCw, Settings, ChevronRight } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Plus, RefreshCw, X } from 'lucide-react';
 
-/** Utility for class merging */
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-// --- CONSTANTS ---
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2';
 const REFRESH_INTERVAL = 10000;
 
-// --- TYPES ---
-interface Position {
+type Position = {
   id: string;
   token: string;
   price: number;
   entry: number;
   longLiq: number;
   shortLiq: number;
+};
+
+type Draft = {
+  token: string;
+  entry: string;
+  longLiq: string;
+  shortLiq: string;
+};
+
+const money = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
+function formatMoney(value: number) {
+  return `$${money.format(value)}`;
 }
 
-// --- COMPONENTS ---
+function shellTile(tone: 'accent' | 'dark' = 'dark') {
+  return tone === 'accent'
+    ? 'rounded-[30px] border-[4px] border-black bg-[#69bbff] text-black'
+    : 'rounded-[30px] border-[4px] border-[#151515] bg-black text-white';
+}
 
-/** Liquidation Visualization Bar */
-const LiquidationBar = ({ current, long, short }: { current: number; long: number; short: number }) => {
-  const range = short - long;
-  const rawPos = range > 0 ? ((current - long) / range) * 100 : 50;
-  const position = Math.min(Math.max(rawPos, 5), 95);
-
-  return (
-    <div className="relative w-full h-2 bg-[#1F2330] rounded-full mt-4 overflow-visible">
-      {/* Risk Segments (visual indicator) */}
-      <div className="absolute inset-0 flex">
-        <div className="h-full w-[30%] bg-[#EF4444]/10 rounded-l-full" />
-        <div className="h-full w-[40%] bg-[#4ADE80]/5" />
-        <div className="h-full w-[30%] bg-[#EF4444]/10 rounded-r-full" />
-      </div>
-      
-      {/* Current Price Dot */}
-      <motion.div 
-        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-[#12131A] shadow-xl z-10"
-        initial={false}
-        animate={{ left: `${position}%` }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      />
-    </div>
+function nearestRisk(position: Position) {
+  const nearest = Math.min(
+    Math.abs(position.price - position.longLiq),
+    Math.abs(position.price - position.shortLiq),
   );
-};
 
-/** Position Card Interface */
-const PositionCard = ({ pos, onRemove }: { pos: Position; onRemove: (id: string) => void }) => {
-  const diffLong = Math.abs(pos.price - pos.longLiq);
-  const diffShort = Math.abs(pos.price - pos.shortLiq);
-  const isShortCloser = diffShort < diffLong;
+  return position.price ? (nearest / position.price) * 100 : 0;
+}
+
+function AddForm({
+  open,
+  onToggle,
+  onAdd,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onAdd: (draft: Draft) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<Draft>({
+    token: '',
+    entry: '',
+    longLiq: '',
+    shortLiq: '',
+  });
+
+  const update = (field: keyof Draft, value: string) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: field === 'token' ? value.toUpperCase() : value,
+    }));
+  };
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await onAdd(draft);
+    setDraft({ token: '', entry: '', longLiq: '', shortLiq: '' });
+  };
 
   return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -2 }}
-      className="bg-[#12131A] border border-[#1F2330] rounded-2xl p-4 space-y-3 relative group"
-    >
-      <button 
-        onClick={() => onRemove(pos.id)}
-        className="absolute top-2 right-2 p-1 text-[#8A8FA3] opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <X size={14} />
-      </button>
-
-      <div className="flex justify-between items-baseline">
-        <span className="text-[16px] font-semibold text-white tracking-tight">{pos.token}</span>
-        <span className="text-[18px] font-bold text-white">
-          ${pos.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-        </span>
-      </div>
-
-      <div className="text-[13px] text-[#8A8FA3] flex items-center gap-1">
-        Entry <span className="text-white">${pos.entry.toLocaleString()}</span>
-      </div>
-
-      <LiquidationBar current={pos.price} long={pos.longLiq} short={pos.shortLiq} />
-
-      <div className="flex justify-between pt-1">
+    <section className={`${shellTile('dark')} p-4`}>
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] text-[#8A8FA3] uppercase tracking-wider mb-0.5">Long Liq</p>
-          <p className="text-[15px] font-semibold">${pos.longLiq.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Add position</p>
+          <p className="mt-1 text-2xl text-white">Builder</p>
         </div>
-        <div className="text-right">
-          <p className="text-[11px] text-[#8A8FA3] uppercase tracking-wider mb-0.5">Short Liq</p>
-          <p className={cn("text-[15px] font-semibold", isShortCloser ? "text-[#EF4444]" : "")}>
-            ${pos.shortLiq.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+        <button
+          onClick={onToggle}
+          className="rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/72"
+        >
+          {open ? 'Hide' : 'Open'}
+        </button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.form
+            onSubmit={submit}
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                value={draft.token}
+                onChange={(event) => update('token', event.target.value)}
+                placeholder="BTC"
+                className="col-span-2 rounded-[22px] border-2 border-[#1c1c1c] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+              />
+              <input
+                type="number"
+                step="any"
+                value={draft.entry}
+                onChange={(event) => update('entry', event.target.value)}
+                placeholder="Entry"
+                className="rounded-[22px] border-2 border-[#1c1c1c] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+              />
+              <input
+                type="number"
+                step="any"
+                value={draft.longLiq}
+                onChange={(event) => update('longLiq', event.target.value)}
+                placeholder="Long liq"
+                className="rounded-[22px] border-2 border-[#1c1c1c] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+              />
+              <input
+                type="number"
+                step="any"
+                value={draft.shortLiq}
+                onChange={(event) => update('shortLiq', event.target.value)}
+                placeholder="Short liq"
+                className="col-span-2 rounded-[22px] border-2 border-[#1c1c1c] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-[22px] bg-[#f3f3f3] text-sm font-semibold uppercase tracking-[0.14em] text-black"
+            >
+              Add position
+            </button>
+          </motion.form>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+function PositionCard({
+  position,
+  onRemove,
+}: {
+  position: Position;
+  onRemove: (id: string) => void;
+}) {
+  const distLong = Math.abs(position.price - position.longLiq);
+  const distShort = Math.abs(position.price - position.shortLiq);
+  const shortCloser = distShort < distLong;
+  const lower = Math.min(position.longLiq, position.shortLiq);
+  const upper = Math.max(position.longLiq, position.shortLiq);
+  const range = upper - lower || 1;
+  const marker = Math.min(Math.max(((position.price - lower) / range) * 100, 4), 96);
+
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+      className={`${shellTile('dark')} p-4`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[13px] uppercase tracking-[0.18em] text-white/45">{position.token}</p>
+          <p className="mt-3 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-white">
+            {position.price > 100 ? position.price.toFixed(0) : position.price.toFixed(2)}
           </p>
         </div>
+        <button
+          onClick={() => onRemove(position.id)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/55"
+        >
+          <X size={15} />
+        </button>
       </div>
 
-      {isShortCloser && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center gap-1.5 text-[#F59E0B] text-[12px] pt-1"
-        >
-          <AlertTriangle size={12} />
-          <span>Short closer</span>
-        </motion.div>
-      )}
-    </motion.div>
-  );
-};
-
-/** Bottom Sheet Form */
-const AddPositionSheet = ({ isOpen, onClose, onAdd }: { isOpen: boolean; onClose: () => void; onAdd: (p: any) => void }) => {
-  const [formData, setFormData] = useState({ token: '', entry: '', longLiq: '', shortLiq: '' });
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+      <div className="mt-4 rounded-[24px] border-2 border-[#171717] bg-[#080808] p-4">
+        <div className="relative h-4 rounded-full bg-[#1a1a1a]">
+          <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-[#69bbff]" />
+          <div className="absolute inset-y-0 right-0 w-[36%] rounded-full bg-[#ffb54c]" />
+          <motion.div
+            className="absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-black bg-white"
+            initial={false}
+            animate={{ left: `${marker}%` }}
+            transition={{ type: 'spring', stiffness: 140, damping: 18 }}
           />
-          <motion.div 
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[375px] bg-[#12131A] rounded-t-[32px] p-8 pb-10 z-50 border-t border-[#1F2330]"
-          >
-            <div className="w-12 h-1 bg-[#1F2330] rounded-full mx-auto mb-8" />
-            <h2 className="text-xl font-bold mb-6">Add Position</h2>
-            <div className="space-y-4">
-              <input
-                placeholder="Token (BTC, SUI...)"
-                className="w-full bg-[#0B0B0F] border border-[#1F2330] rounded-xl h-14 px-4 text-white focus:border-[#6366F1] outline-none transition-all placeholder:text-[#5F677A]"
-                value={formData.token} onChange={e => setFormData({...formData, token: e.target.value.toUpperCase()})}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="number" step="any" placeholder="Entry"
-                  className="w-full bg-[#0B0B0F] border border-[#1F2330] rounded-xl h-14 px-4 text-white focus:border-[#6366F1] outline-none transition-all"
-                  value={formData.entry} onChange={e => setFormData({...formData, entry: e.target.value})}
-                />
-                <input
-                  type="number" step="any" placeholder="Long Liq"
-                  className="w-full bg-[#0B0B0F] border border-[#1F2330] rounded-xl h-14 px-4 text-white focus:border-[#6366F1] outline-none transition-all"
-                  value={formData.longLiq} onChange={e => setFormData({...formData, longLiq: e.target.value})}
-                />
-              </div>
-              <input
-                type="number" step="any" placeholder="Short Liq"
-                className="w-full bg-[#0B0B0F] border border-[#1F2330] rounded-xl h-14 px-4 text-white focus:border-[#6366F1] outline-none transition-all"
-                value={formData.shortLiq} onChange={e => setFormData({...formData, shortLiq: e.target.value})}
-              />
-              <button 
-                onClick={() => { onAdd(formData); onClose(); setFormData({token:'', entry:'', longLiq:'', shortLiq:''}); }}
-                className="w-full h-14 bg-[#6366F1] text-white font-bold rounded-xl active:scale-[0.98] transition-all"
-              >
-                Add Position
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-[20px] bg-[#101010] p-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Long liq</p>
+            <p className="mt-2 text-[26px] leading-none text-white">{formatMoney(position.longLiq)}</p>
+          </div>
+          <div className={`rounded-[20px] p-3 ${shortCloser ? 'bg-[#2a1a07] text-[#ffd08c]' : 'bg-[#101010] text-white'}`}>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Short liq</p>
+            <p className="mt-2 text-[26px] leading-none">{formatMoney(position.shortLiq)}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-white/45">Entry {formatMoney(position.entry)}</span>
+          <span className="text-white">{shortCloser ? 'Short is closer' : 'Long is closer'}</span>
+        </div>
+      </div>
+    </motion.article>
   );
-};
+}
 
-// --- MAIN SCREEN ---
-const LiquidationTrackerScreen = () => {
+export default function LiquidationTrackerScreen() {
   const [positions, setPositions] = useState<Position[]>([
-    { id: '1', token: 'SUI / USD', price: 0.99, entry: 0.98, longLiq: 0.22, shortLiq: 1.22 },
-    { id: '2', token: 'BTC / USD', price: 67340, entry: 65000, longLiq: 58000, shortLiq: 71000 }
+    { id: '1', token: 'SUI / USD', price: 0.994, entry: 1, longLiq: 0.33, shortLiq: 1.5 },
+    { id: '2', token: 'BTC / USD', price: 67340, entry: 65000, longLiq: 58000, shortLiq: 71000 },
   ]);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [feedIds] = useState(new Map<string, string>());
-
-  const portfolioValue = useMemo(() => {
-    // In a real app we'd track size, here we'll just sum entries for visual appeal
-    return positions.reduce((acc, p) => acc + (p.entry * 0.15), 12430);
-  }, [positions]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
 
   const apiFetchPrice = async (ticker: string) => {
     try {
-      let fId = feedIds.get(ticker);
-      if (!fId) {
-        const res = await fetch(`${PYTH_HERMES_URL}/price_feeds?query=${ticker}&asset_type=crypto`);
-        const data = await res.json();
-        const feed = data.find((f: any) => 
-          f.attributes.symbol.toUpperCase() === `${ticker}/USD` || 
-          f.attributes.base.toUpperCase() === ticker
-        ) || data[0];
-        if (feed) { feedIds.set(ticker, feed.id); fId = feed.id; }
-      }
-      if (fId) {
-        const res = await fetch(`${PYTH_HERMES_URL}/updates/price/latest?ids[]=${fId}`);
-        const data = await res.json();
-        const p = data.parsed[0].price;
-        return parseFloat(p.price) * Math.pow(10, p.expo);
-      }
-    } catch {}
-    return null;
-  };
+      let feedId = feedIds.get(ticker);
 
-  const refreshAll = useCallback(async () => {
-    setIsRefreshing(true);
-    const updated = await Promise.all(positions.map(async p => {
-      const live = await apiFetchPrice(p.token.split(' / ')[0]);
-      return live ? { ...p, price: live } : p;
-    }));
-    setPositions(updated);
-    setTimeout(() => setIsRefreshing(false), 800);
-  }, [positions]);
+      if (!feedId) {
+        const feedResponse = await fetch(`${PYTH_HERMES_URL}/price_feeds?query=${ticker}&asset_type=crypto`);
+        const feedData = await feedResponse.json();
+        const feed =
+          feedData.find(
+            (item: any) =>
+              item.attributes.symbol.toUpperCase() === `${ticker}/USD` ||
+              item.attributes.base.toUpperCase() === ticker,
+          ) || feedData[0];
+
+        if (feed) {
+          feedIds.set(ticker, feed.id);
+          feedId = feed.id;
+        }
+      }
+
+      if (!feedId) return null;
+
+      const priceResponse = await fetch(`${PYTH_HERMES_URL}/updates/price/latest?ids[]=${feedId}`);
+      const priceData = await priceResponse.json();
+      const parsed = priceData.parsed?.[0]?.price;
+
+      if (!parsed) return null;
+
+      return parseFloat(parsed.price) * Math.pow(10, parsed.expo);
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
-    const i = setInterval(refreshAll, REFRESH_INTERVAL);
-    return () => clearInterval(i);
-  }, [refreshAll]);
+    const interval = setInterval(async () => {
+      setIsRefreshing(true);
 
-  const handleAdd = async (data: any) => {
-    const live = await apiFetchPrice(data.token) || parseFloat(data.entry);
-    const newPos: Position = {
+      const updated = await Promise.all(
+        positions.map(async (position) => {
+          const ticker = position.token.split(' / ')[0];
+          const livePrice = await apiFetchPrice(ticker);
+          return livePrice ? { ...position, price: livePrice } : position;
+        }),
+      );
+
+      setPositions(updated);
+      window.setTimeout(() => setIsRefreshing(false), 500);
+    }, REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [positions]);
+
+  const addPosition = async (draft: Draft) => {
+    if (!draft.token || !draft.entry) return;
+
+    const livePrice = (await apiFetchPrice(draft.token)) ?? parseFloat(draft.entry);
+    const next: Position = {
       id: Date.now().toString(),
-      token: `${data.token} / USD`,
-      price: live,
-      entry: parseFloat(data.entry),
-      longLiq: parseFloat(data.longLiq),
-      shortLiq: parseFloat(data.shortLiq)
+      token: `${draft.token} / USD`,
+      price: livePrice,
+      entry: parseFloat(draft.entry),
+      longLiq: parseFloat(draft.longLiq) || 0,
+      shortLiq: parseFloat(draft.shortLiq) || 0,
     };
-    setPositions([newPos, ...positions]);
+
+    setPositions((current) => [next, ...current]);
   };
 
+  const hero = useMemo(() => positions[0] ?? null, [positions]);
+  const avgRisk = positions.length
+    ? positions.reduce((sum, position) => sum + nearestRisk(position), 0) / positions.length
+    : 0;
+
   return (
-    <div className="min-h-screen bg-[#0B0B0F] text-white flex justify-center selection:bg-[#6366F1]/40">
-      <div className="w-full max-w-[375px] px-4 py-8 relative">
-        
-        {/* HEADER */}
-        <header className="mb-8 space-y-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-[20px] font-semibold text-white">Liquidation Tracker</h1>
-            <button 
-              onClick={refreshAll}
-              className={cn("p-2 transition-transform", isRefreshing && "animate-spin")}
-            >
-              <RefreshCw size={20} className="text-[#8A8FA3]" />
-            </button>
-          </div>
-          <div>
-            <p className="text-[12px] text-[#8A8FA3] font-medium tracking-wide uppercase">Portfolio value</p>
-            <motion.div 
-              key={positions.length}
-              initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
-              className="text-[32px] font-bold"
-            >
-              ${portfolioValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-            </motion.div>
+    <div className="min-h-screen bg-[#efefef] px-4 py-5 text-black">
+      <div className="mx-auto flex w-full max-w-[430px] flex-col gap-4 rounded-[42px] border-[8px] border-black bg-black p-4 shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
+        <header className="flex items-center justify-between px-1">
+          <p className="text-[13px] uppercase tracking-[0.14em] text-[#d8c3a8]">Liquidation tracker</p>
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15">
+            <span className={`h-2.5 w-2.5 rounded-full ${isRefreshing ? 'bg-[#69bbff]' : 'bg-[#9be04f]'}`} />
           </div>
         </header>
 
-        {/* POSITIONS LIST */}
-        <div className="space-y-3 pb-24">
-          <AnimatePresence mode="popLayout">
-            {positions.map(pos => (
-              <PositionCard 
-                key={pos.id} 
-                pos={pos} 
-                onRemove={(id) => setPositions(positions.filter(p => p.id !== id))} 
-              />
-            ))}
-          </AnimatePresence>
+        <section className={`${shellTile('accent')} p-5`}>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-[18px]">{hero ? `${hero.token} live focus` : 'No active position'}</p>
+            <button
+              onClick={() => setFormOpen(true)}
+              className="rounded-full border-2 border-black/15 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em]"
+            >
+              New
+            </button>
+          </div>
 
-          {positions.length === 0 && (
-            <div className="pt-20 text-center space-y-3">
-              <p className="text-xl font-bold opacity-40">No positions yet</p>
-              <p className="text-[#8A8FA3] text-sm">Track your liquidation risk</p>
-              <button 
-                onClick={() => setIsSheetOpen(true)}
-                className="px-6 py-3 bg-[#6366F1] rounded-full text-sm font-bold"
-              >
-                Add Position
-              </button>
-            </div>
-          )}
+          <div className="mt-5">
+            <p className="font-['Space_Grotesk',sans-serif] text-[92px] leading-[0.86] tracking-[-0.08em]">
+              {hero ? (hero.price > 100 ? hero.price.toFixed(0) : hero.price.toFixed(2)) : '0'}
+            </p>
+            <p className="mt-3 text-[26px] leading-none">{hero ? hero.token : 'Add position'}</p>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-2 gap-4">
+          <section className={`${shellTile('dark')} p-4`}>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">Risk</div>
+            <p className="mt-5 font-['Space_Grotesk',sans-serif] text-[44px] leading-none tracking-[-0.06em] text-white">
+              {avgRisk.toFixed(1)}
+            </p>
+            <p className="mt-2 text-[18px] text-white/72">risk %</p>
+          </section>
+
+          <section className={`${shellTile('dark')} p-4`}>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">Refresh</div>
+            <p className="mt-5 font-['Space_Grotesk',sans-serif] text-[44px] leading-none tracking-[-0.06em] text-white">
+              {REFRESH_INTERVAL / 1000}
+            </p>
+            <p className="mt-2 text-[18px] text-white/72">seconds</p>
+          </section>
         </div>
 
-        {/* FLOATING ACTION BUTTON */}
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsSheetOpen(true)}
-          className="fixed bottom-8 right-1/2 translate-x-[150px] w-14 h-14 bg-[#6366F1] rounded-full shadow-[0_8px_24px_rgba(99,102,241,0.4)] flex items-center justify-center z-30"
-        >
-          <Plus size={28} />
-        </motion.button>
+        <AddForm open={formOpen} onToggle={() => setFormOpen((current) => !current)} onAdd={addPosition} />
 
-        <AddPositionSheet 
-          isOpen={isSheetOpen} 
-          onClose={() => setIsSheetOpen(false)} 
-          onAdd={handleAdd} 
-        />
+        <section className={`${shellTile('dark')} p-4`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Your positions</p>
+              <p className="mt-1 text-2xl text-white">Watchlist</p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-white/58">
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[#69bbff]' : ''} />
+              {positions.length}
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            <AnimatePresence mode="popLayout">
+              {positions.map((position) => (
+                <PositionCard
+                  key={position.id}
+                  position={position}
+                  onRemove={(id) => setPositions((current) => current.filter((item) => item.id !== id))}
+                />
+              ))}
+            </AnimatePresence>
+
+            {positions.length === 0 && (
+              <div className="rounded-[24px] border-2 border-[#171717] bg-[#080808] px-5 py-10 text-center text-white/60">
+                No active positions
+              </div>
+            )}
+          </div>
+        </section>
+
+        <button
+          onClick={() => setFormOpen(true)}
+          className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full border-[4px] border-black bg-[#69bbff] text-black shadow-[0_14px_30px_rgba(0,0,0,0.22)]"
+          aria-label="Open form"
+        >
+          <Plus size={24} />
+        </button>
       </div>
     </div>
   );
-};
-
-export default LiquidationTrackerScreen;
+}
