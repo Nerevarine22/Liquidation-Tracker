@@ -78,7 +78,7 @@ function AddForm({
     <section
       className={
         open
-          ? 'w-full rounded-[26px] bg-black p-4 text-white'
+          ? 'w-full rounded-[26px] bg-black px-[2px] py-4 text-white'
           : 'w-full py-1 text-white'
       }
     >
