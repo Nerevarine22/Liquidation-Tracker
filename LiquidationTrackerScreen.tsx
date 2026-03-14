@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, RefreshCw, X } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2';
 const REFRESH_INTERVAL = 10000;
@@ -32,8 +32,8 @@ function formatMoney(value: number) {
 
 function shellTile(tone: 'accent' | 'dark' = 'dark') {
   return tone === 'accent'
-    ? 'rounded-[28px] border-[2px] border-black bg-[#f2f2f2] text-black'
-    : 'rounded-[28px] border-[2px] border-[#181818] bg-black text-white';
+    ? 'rounded-[26px] border border-black bg-[#f2f2f2] text-black'
+    : 'rounded-[26px] border border-[#181818] bg-black text-white';
 }
 
 function nearestRisk(position: Position) {
@@ -185,7 +185,7 @@ function PositionCard({
         </button>
       </div>
 
-      <div className="mt-4 rounded-[24px] border border-[#1b1b1b] bg-[#080808] p-4">
+      <div className="mt-4 rounded-[22px] bg-[#080808] p-0">
         <div className="relative h-4 rounded-full bg-[#1a1a1a]">
           <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-[#69c16f]" />
           <div className="absolute inset-y-0 right-0 w-[36%] rounded-full bg-[#ff5a4a]" />
@@ -301,56 +301,12 @@ export default function LiquidationTrackerScreen() {
     setPositions((current) => [next, ...current]);
   };
 
-  const avgRisk = positions.length
-    ? positions.reduce((sum, position) => sum + nearestRisk(position), 0) / positions.length
-    : 0;
-  const totalPositions = positions.length;
-
   return (
     <div className="min-h-screen bg-[#efefef] text-black">
-      <div className="flex min-h-screen w-full flex-col gap-4 bg-black px-4 py-5 sm:px-5">
+      <div className="flex min-h-screen w-full flex-col gap-3 bg-black px-2 py-4 sm:px-3">
         <header className="flex items-center justify-between px-0.5">
           <p className="text-[13px] uppercase tracking-[0.14em] text-[#d8c3a8]">Liquidation tracker</p>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15">
-            <span className={`h-2.5 w-2.5 rounded-full ${isRefreshing ? 'bg-[#69bbff]' : 'bg-[#9be04f]'}`} />
-          </div>
         </header>
-
-        <div className="grid grid-cols-2 gap-4">
-          <section className={`${shellTile('dark')} p-4`}>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">Positions</div>
-            <p className="mt-5 font-['Space_Grotesk',sans-serif] text-[44px] leading-none tracking-[-0.06em] text-white">
-              {totalPositions}
-            </p>
-            <p className="mt-2 text-[18px] text-white/72">active</p>
-          </section>
-
-          <section className={`${shellTile('dark')} p-4`}>
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/42">Risk</div>
-            <p className="mt-5 font-['Space_Grotesk',sans-serif] text-[44px] leading-none tracking-[-0.06em] text-white">
-              {avgRisk.toFixed(1)}
-            </p>
-            <p className="mt-2 text-[18px] text-white/72">risk %</p>
-          </section>
-        </div>
-
-        <section className={`${shellTile('accent')} p-4`}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] text-black/55">Refresh</p>
-              <p className="mt-2 font-['Space_Grotesk',sans-serif] text-[48px] leading-none tracking-[-0.06em]">
-                {REFRESH_INTERVAL / 1000}
-              </p>
-              <p className="mt-2 text-[18px] text-black/72">seconds</p>
-            </div>
-            <button
-              onClick={() => setFormOpen(true)}
-              className="rounded-full border border-black/15 px-4 py-2 text-[11px] uppercase tracking-[0.14em]"
-            >
-              Add
-            </button>
-          </div>
-        </section>
 
         <AddForm open={formOpen} onToggle={() => setFormOpen((current) => !current)} onAdd={addPosition} />
 
@@ -378,20 +334,12 @@ export default function LiquidationTrackerScreen() {
             </AnimatePresence>
 
             {positions.length === 0 && (
-              <div className="rounded-[24px] border border-[#171717] bg-[#080808] px-5 py-10 text-center text-white/60">
+              <div className="rounded-[22px] bg-[#080808] px-5 py-10 text-center text-white/60">
                 No active positions
               </div>
             )}
           </div>
         </section>
-
-        <button
-          onClick={() => setFormOpen(true)}
-          className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full border-[2px] border-black bg-[#69bbff] text-black shadow-[0_14px_30px_rgba(0,0,0,0.22)]"
-          aria-label="Open form"
-        >
-          <Plus size={24} />
-        </button>
       </div>
     </div>
   );
