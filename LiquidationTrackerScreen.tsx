@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, X } from 'lucide-react';
+import { ChevronDown, RefreshCw, X } from 'lucide-react';
 
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2';
 const REFRESH_INTERVAL = 10000;
@@ -75,17 +75,25 @@ function AddForm({
   };
 
   return (
-    <section className={`${shellTile('dark')} p-4`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Add position</p>
-          <p className="mt-1 text-2xl text-white">Builder</p>
-        </div>
+    <section
+      className={
+        open
+          ? 'w-full rounded-[26px] bg-black p-4 text-white'
+          : 'w-full py-1 text-white'
+      }
+    >
+      <div className={`flex w-full items-center ${open ? 'justify-between gap-3' : 'justify-end'}`}>
+        {open && (
+          <div>
+            <p className="text-2xl text-white">Builder</p>
+          </div>
+        )}
         <button
           onClick={onToggle}
-          className="rounded-full border border-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white/72"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/72"
+          aria-label={open ? 'Collapse builder' : 'Expand builder'}
         >
-          {open ? 'Hide' : 'Open'}
+          <ChevronDown size={18} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
@@ -168,7 +176,7 @@ function PositionCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className={`${shellTile('dark')} p-4`}
+      className="rounded-[26px] bg-black p-4 text-white"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -176,6 +184,7 @@ function PositionCard({
           <p className="mt-3 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-white">
             {position.price > 100 ? position.price.toFixed(0) : position.price.toFixed(2)}
           </p>
+          <p className="mt-2 text-sm text-white/42">Entry {formatMoney(position.entry)}</p>
         </div>
         <button
           onClick={() => onRemove(position.id)}
@@ -185,7 +194,7 @@ function PositionCard({
         </button>
       </div>
 
-      <div className="mt-4 rounded-[22px] bg-[#080808] p-0">
+      <div className="mt-4 bg-[#080808] p-0">
         <div className="relative h-4 rounded-full bg-[#1a1a1a]">
           <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-[#69c16f]" />
           <div className="absolute inset-y-0 right-0 w-[36%] rounded-full bg-[#ff5a4a]" />
@@ -198,25 +207,20 @@ function PositionCard({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-[20px] border border-[#1d3520] bg-[#0d140e] p-3">
+          <div className="rounded-[20px] bg-[#0d140e] p-3">
             <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Long liq</p>
             <p className="mt-2 text-[26px] leading-none text-[#89dc8b]">{formatMoney(position.longLiq)}</p>
           </div>
           <div
-            className={`rounded-[20px] border p-3 ${
+            className={`rounded-[20px] p-3 ${
               shortCloser
-                ? 'border-[#54211b] bg-[#1b0e0c] text-[#ff9489]'
-                : 'border-[#3a1d19] bg-[#140d0c] text-[#ff9489]'
+                ? 'bg-[#1b0e0c] text-[#ff9489]'
+                : 'bg-[#140d0c] text-[#ff9489]'
             }`}
           >
             <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Short liq</p>
             <p className="mt-2 text-[26px] leading-none">{formatMoney(position.shortLiq)}</p>
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-white/45">Entry {formatMoney(position.entry)}</span>
-          <span className="text-white">{shortCloser ? 'Short is closer' : 'Long is closer'}</span>
         </div>
       </div>
     </motion.article>
@@ -224,10 +228,7 @@ function PositionCard({
 }
 
 export default function LiquidationTrackerScreen() {
-  const [positions, setPositions] = useState<Position[]>([
-    { id: '1', token: 'SUI / USD', price: 0.994, entry: 1, longLiq: 0.33, shortLiq: 1.5 },
-    { id: '2', token: 'BTC / USD', price: 67340, entry: 65000, longLiq: 58000, shortLiq: 71000 },
-  ]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [feedIds] = useState(new Map<string, string>());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
@@ -303,17 +304,16 @@ export default function LiquidationTrackerScreen() {
 
   return (
     <div className="min-h-screen bg-[#efefef] text-black">
-      <div className="flex min-h-screen w-full flex-col gap-3 bg-black px-2 py-4 sm:px-3">
-        <header className="flex items-center justify-between px-0.5">
-          <p className="text-[13px] uppercase tracking-[0.14em] text-[#d8c3a8]">Liquidation tracker</p>
+      <div className="flex min-h-screen w-full flex-col gap-[8px] bg-black px-[1px] py-[8px]">
+        <header className="flex items-center justify-center px-0.5">
+          <p className="text-[13px] font-medium tracking-[0.08em] text-[#7f7f7f]">Are you liquidated?</p>
         </header>
 
         <AddForm open={formOpen} onToggle={() => setFormOpen((current) => !current)} onAdd={addPosition} />
 
-        <section className={`${shellTile('dark')} p-4`}>
+        <section className="rounded-[26px] bg-black p-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">Your positions</p>
               <p className="mt-1 text-2xl text-white">Watchlist</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-white/58">
