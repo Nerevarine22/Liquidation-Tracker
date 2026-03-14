@@ -210,6 +210,22 @@ function updateRefreshRing() {
 
 setInterval(updateRefreshRing, 100);
 
+// Collapse Form Logic
+const toggleFormBtn = document.getElementById('toggle-form-btn');
+const formContainer = document.getElementById('form-container');
+const toggleIcon = document.getElementById('toggle-icon');
+
+toggleFormBtn.addEventListener('click', () => {
+    const isHidden = formContainer.classList.contains('hidden');
+    if (isHidden) {
+        formContainer.classList.remove('hidden');
+        toggleIcon.classList.remove('-rotate-180');
+    } else {
+        formContainer.classList.add('hidden');
+        toggleIcon.classList.add('-rotate-180');
+    }
+});
+
 // Події
 form.addEventListener('submit', addPosition);
 
