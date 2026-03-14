@@ -107,13 +107,13 @@ function AddForm({
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-[6px]">
               <input
                 type="text"
                 value={draft.token}
                 onChange={(event) => update('token', event.target.value)}
                 placeholder="BTC"
-                className="col-span-2 rounded-[22px] border border-[#242424] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+                className="col-span-2 rounded-[22px] border border-[#242424] bg-black px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
               />
               <input
                 type="number"
@@ -121,7 +121,7 @@ function AddForm({
                 value={draft.entry}
                 onChange={(event) => update('entry', event.target.value)}
                 placeholder="Entry"
-                className="rounded-[22px] border border-[#242424] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
+                className="rounded-[22px] border border-[#242424] bg-black px-4 py-3 text-base text-white outline-none focus:border-[#69bbff]"
               />
               <input
                 type="number"
@@ -129,7 +129,7 @@ function AddForm({
                 value={draft.longLiq}
                 onChange={(event) => update('longLiq', event.target.value)}
                 placeholder="Long liq"
-                className="rounded-[22px] border border-[#242424] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#74c468]"
+                className="rounded-[22px] border border-[#242424] bg-black px-4 py-3 text-base text-white outline-none focus:border-[#74c468]"
               />
               <input
                 type="number"
@@ -137,7 +137,7 @@ function AddForm({
                 value={draft.shortLiq}
                 onChange={(event) => update('shortLiq', event.target.value)}
                 placeholder="Short liq"
-                className="col-span-2 rounded-[22px] border border-[#242424] bg-[#090909] px-4 py-3 text-base text-white outline-none focus:border-[#ff5a4a]"
+                className="col-span-2 rounded-[22px] border border-[#242424] bg-black px-4 py-3 text-base text-white outline-none focus:border-[#ff5a4a]"
               />
             </div>
 
@@ -194,7 +194,7 @@ function PositionCard({
         </button>
       </div>
 
-      <div className="mt-3 bg-[#080808] p-0">
+      <div className="mt-3 p-0">
         <div className="relative h-4 rounded-full bg-[#1a1a1a]">
           <div className="absolute inset-y-0 left-0 w-[36%] rounded-full bg-[#69c16f]" />
           <div className="absolute inset-y-0 right-0 w-[36%] rounded-full bg-[#ff5a4a]" />
