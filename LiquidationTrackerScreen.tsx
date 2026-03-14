@@ -23,11 +23,15 @@ type Draft = {
 
 const money = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
+  maximumFractionDigits: 6,
 });
 
 function formatMoney(value: number) {
   return `$${money.format(value)}`;
+}
+
+function formatDisplayPrice(value: number) {
+  return value > 100 ? value.toFixed(2) : value.toFixed(4);
 }
 
 function shellTile(tone: 'accent' | 'dark' = 'dark') {
@@ -181,8 +185,8 @@ function PositionCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[13px] uppercase tracking-[0.18em] text-white/45">{position.token}</p>
-          <p className="mt-2 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-white">
-            {position.price > 100 ? position.price.toFixed(0) : position.price.toFixed(2)}
+          <p className="mt-2 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-[#d2d2d2]">
+            {formatDisplayPrice(position.price)}
           </p>
           <p className="mt-2 text-sm text-white/42">Entry {formatMoney(position.entry)}</p>
         </div>
@@ -304,11 +308,7 @@ export default function LiquidationTrackerScreen() {
 
   return (
     <div className="min-h-screen bg-[#efefef] text-black">
-      <div className="flex min-h-screen w-full flex-col gap-[8px] bg-black px-[1px] py-[8px]">
-        <header className="flex items-center justify-center px-0.5">
-          <p className="text-[13px] font-medium tracking-[0.08em] text-[#7f7f7f]">Are you liquidated?</p>
-        </header>
-
+      <div className="flex min-h-screen w-full flex-col gap-[4px] bg-black px-[1px] py-[8px]">
         <AddForm open={formOpen} onToggle={() => setFormOpen((current) => !current)} onAdd={addPosition} />
 
         <section className="rounded-[26px] bg-black px-[2px] py-4 text-white">
