@@ -369,7 +369,7 @@ export default function LiquidationTrackerScreen() {
           const livePrice = await apiFetchPrice(position.token);
           return livePrice
             ? { ...position, price: livePrice.price, priceSource: livePrice.source }
-            : { ...position, priceSource: 'entry' as const };
+            : position;
         }),
       );
 
