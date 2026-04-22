@@ -3,8 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, RefreshCw, X } from 'lucide-react';
 
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2';
+const BINANCE_API_URL = 'https://api.binance.com/api/v3';
 const REFRESH_INTERVAL = 10000;
 const POSITIONS_STORAGE_KEY = 'liq-tracker.positions';
+
+type PriceSource = 'binance' | 'pyth' | 'entry';
 
 type Position = {
   id: string;
@@ -13,6 +16,7 @@ type Position = {
   entry: number;
   longLiq: number;
   shortLiq: number;
+  priceSource?: PriceSource;
 };
 
 type Draft = {
@@ -56,6 +60,16 @@ function normalizeTicker(value: string) {
 
 function parsePythPrice(price: { price: string; expo: number }) {
   return Number(price.price) * 10 ** price.expo;
+}
+
+async function fetchBinancePrice(symbol: string) {
+  const response = await fetch(`${BINANCE_API_URL}/ticker/price?symbol=${encodeURIComponent(`${symbol}USDT`)}`);
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  const price = Number(data.price);
+
+  return Number.isFinite(price) && price > 0 ? price : null;
 }
 
 function AddForm({
@@ -197,7 +211,12 @@ function PositionCard({
           <p className="mt-2 font-['Space_Grotesk',sans-serif] text-[46px] leading-[0.9] tracking-[-0.06em] text-[#d2d2d2]">
             {formatDisplayPrice(position.price)}
           </p>
-          <p className="mt-2 text-sm text-white/42">Entry {formatMoney(position.entry)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/42">
+            <span>Entry {formatMoney(position.entry)}</span>
+            <span className={position.priceSource === 'entry' ? 'text-[#ff9489]' : 'text-[#89dc8b]'}>
+              {position.priceSource === 'entry' ? 'Entry fallback' : `Live ${position.priceSource ?? 'api'}`}
+            </span>
+          </div>
         </div>
         <button
           onClick={() => onRemove(position.id)}
@@ -263,6 +282,15 @@ export default function LiquidationTrackerScreen() {
     if (!symbol) return null;
 
     try {
+      const binancePrice = await fetchBinancePrice(symbol);
+      if (binancePrice) {
+        return { price: binancePrice, source: 'binance' as const };
+      }
+    } catch {
+      // Fall through to Pyth if Binance is unavailable or the pair is not listed.
+    }
+
+    try {
       let feedId = feedIds.get(symbol);
 
       if (!feedId) {
@@ -300,7 +328,7 @@ export default function LiquidationTrackerScreen() {
 
       if (!parsed) return null;
 
-      return parsePythPrice(parsed);
+      return { price: parsePythPrice(parsed), source: 'pyth' as const };
     } catch {
       return null;
     }
@@ -313,7 +341,9 @@ export default function LiquidationTrackerScreen() {
       const updated = await Promise.all(
         positionsRef.current.map(async (position) => {
           const livePrice = await apiFetchPrice(position.token);
-          return livePrice ? { ...position, price: livePrice } : position;
+          return livePrice
+            ? { ...position, price: livePrice.price, priceSource: livePrice.source }
+            : { ...position, priceSource: 'entry' as const };
         }),
       );
 
@@ -343,12 +373,14 @@ export default function LiquidationTrackerScreen() {
     if (!draft.token || !draft.entry) return;
 
     const token = normalizeTicker(draft.token);
-    const livePrice = (await apiFetchPrice(token)) ?? parseFloat(draft.entry);
+    const livePrice = await apiFetchPrice(token);
+    const entry = parseFloat(draft.entry);
     const next: Position = {
       id: Date.now().toString(),
       token: `${token} / USD`,
-      price: livePrice,
-      entry: parseFloat(draft.entry),
+      price: livePrice?.price ?? entry,
+      priceSource: livePrice?.source ?? 'entry',
+      entry,
       longLiq: parseFloat(draft.longLiq) || 0,
       shortLiq: parseFloat(draft.shortLiq) || 0,
     };
