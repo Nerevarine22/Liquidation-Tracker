@@ -7,6 +7,26 @@ const BINANCE_API_URL = 'https://api.binance.com/api/v3';
 const REFRESH_INTERVAL = 10000;
 const POSITIONS_STORAGE_KEY = 'liq-tracker.positions';
 
+const TICKER_ALIASES: Record<string, string> = {
+  AVALANCHE: 'AVAX',
+  BITCOIN: 'BTC',
+  BNBCHAIN: 'BNB',
+  CARDANO: 'ADA',
+  DOGECOIN: 'DOGE',
+  ETHER: 'ETH',
+  ETHEREUM: 'ETH',
+  ETHERIUM: 'ETH',
+  HYPERLIQUID: 'HYPE',
+  LITECOIN: 'LTC',
+  POLKADOT: 'DOT',
+  POLYGON: 'POL',
+  RIPPLE: 'XRP',
+  SOLANA: 'SOL',
+  SUI: 'SUI',
+  TONCOIN: 'TON',
+  TRON: 'TRX',
+};
+
 type PriceSource = 'binance' | 'pyth' | 'entry';
 
 type Position = {
@@ -55,7 +75,13 @@ function nearestRisk(position: Position) {
 }
 
 function normalizeTicker(value: string) {
-  return value.replace('/USD', '').replace(/\s/g, '').toUpperCase();
+  const symbol = value
+    .replace(/[-_]/g, '')
+    .replace(/\/?(USD|USDT|USDC)$/i, '')
+    .replace(/\s/g, '')
+    .toUpperCase();
+
+  return TICKER_ALIASES[symbol] ?? symbol;
 }
 
 function parsePythPrice(price: { price: string; expo: number }) {
