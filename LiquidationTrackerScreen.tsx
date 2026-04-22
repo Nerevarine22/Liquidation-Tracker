@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, RefreshCw, X } from 'lucide-react';
 
@@ -48,6 +48,14 @@ function nearestRisk(position: Position) {
   );
 
   return position.price ? (nearest / position.price) * 100 : 0;
+}
+
+function normalizeTicker(value: string) {
+  return value.replace('/USD', '').replace(/\s/g, '').toUpperCase();
+}
+
+function parsePythPrice(price: { price: string; expo: number }) {
+  return Number(price.price) * 10 ** price.expo;
 }
 
 function AddForm({
@@ -248,23 +256,36 @@ export default function LiquidationTrackerScreen() {
   const [feedIds] = useState(new Map<string, string>());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
+  const positionsRef = useRef(positions);
 
-  const apiFetchPrice = async (ticker: string) => {
+  const apiFetchPrice = useCallback(async (ticker: string) => {
+    const symbol = normalizeTicker(ticker);
+    if (!symbol) return null;
+
     try {
-      let feedId = feedIds.get(ticker);
+      let feedId = feedIds.get(symbol);
 
       if (!feedId) {
-        const feedResponse = await fetch(`${PYTH_HERMES_URL}/price_feeds?query=${ticker}&asset_type=crypto`);
+        const feedResponse = await fetch(`${PYTH_HERMES_URL}/price_feeds?query=${symbol}&asset_type=crypto`);
+        if (!feedResponse.ok) return null;
+
         const feedData = await feedResponse.json();
+        if (!Array.isArray(feedData)) return null;
+
         const feed =
           feedData.find(
             (item: any) =>
-              item.attributes.symbol.toUpperCase() === `${ticker}/USD` ||
-              item.attributes.base.toUpperCase() === ticker,
-          ) || feedData[0];
+              item.attributes?.display_symbol?.toUpperCase() === `${symbol}/USD` ||
+              item.attributes?.symbol?.toUpperCase() === `CRYPTO.${symbol}/USD`,
+          ) ||
+          feedData.find(
+            (item: any) =>
+              item.attributes?.base?.toUpperCase() === symbol &&
+              item.attributes?.quote_currency?.toUpperCase() === 'USD',
+          );
 
         if (feed) {
-          feedIds.set(ticker, feed.id);
+          feedIds.set(symbol, feed.id);
           feedId = feed.id;
         }
       }
@@ -272,18 +293,39 @@ export default function LiquidationTrackerScreen() {
       if (!feedId) return null;
 
       const priceResponse = await fetch(`${PYTH_HERMES_URL}/updates/price/latest?ids[]=${feedId}`);
+      if (!priceResponse.ok) return null;
+
       const priceData = await priceResponse.json();
       const parsed = priceData.parsed?.[0]?.price;
 
       if (!parsed) return null;
 
-      return parseFloat(parsed.price) * Math.pow(10, parsed.expo);
+      return parsePythPrice(parsed);
     } catch {
       return null;
     }
-  };
+  }, [feedIds]);
+
+  const refreshPrices = useCallback(async () => {
+    setIsRefreshing(true);
+
+    try {
+      const updated = await Promise.all(
+        positionsRef.current.map(async (position) => {
+          const livePrice = await apiFetchPrice(position.token);
+          return livePrice ? { ...position, price: livePrice } : position;
+        }),
+      );
+
+      setPositions(updated);
+    } finally {
+      window.setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [apiFetchPrice]);
 
   useEffect(() => {
+    positionsRef.current = positions;
+
     try {
       window.localStorage.setItem(POSITIONS_STORAGE_KEY, JSON.stringify(positions));
     } catch {
@@ -292,31 +334,19 @@ export default function LiquidationTrackerScreen() {
   }, [positions]);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      setIsRefreshing(true);
-
-      const updated = await Promise.all(
-        positions.map(async (position) => {
-          const ticker = position.token.split(' / ')[0];
-          const livePrice = await apiFetchPrice(ticker);
-          return livePrice ? { ...position, price: livePrice } : position;
-        }),
-      );
-
-      setPositions(updated);
-      window.setTimeout(() => setIsRefreshing(false), 500);
-    }, REFRESH_INTERVAL);
+    const interval = window.setInterval(refreshPrices, REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [positions]);
+  }, [refreshPrices]);
 
   const addPosition = async (draft: Draft) => {
     if (!draft.token || !draft.entry) return;
 
-    const livePrice = (await apiFetchPrice(draft.token)) ?? parseFloat(draft.entry);
+    const token = normalizeTicker(draft.token);
+    const livePrice = (await apiFetchPrice(token)) ?? parseFloat(draft.entry);
     const next: Position = {
       id: Date.now().toString(),
-      token: `${draft.token} / USD`,
+      token: `${token} / USD`,
       price: livePrice,
       entry: parseFloat(draft.entry),
       longLiq: parseFloat(draft.longLiq) || 0,
@@ -336,10 +366,14 @@ export default function LiquidationTrackerScreen() {
             <div>
               <p className="mt-1 text-2xl text-white/84">Watchlist</p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-white/58">
+            <button
+              onClick={refreshPrices}
+              className="flex items-center gap-2 rounded-full px-2 py-1 text-sm text-white/58"
+              aria-label="Refresh prices"
+            >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[#69bbff]' : ''} />
               {positions.length}
-            </div>
+            </button>
           </div>
 
           <div className="mt-4 space-y-4">
