@@ -76,10 +76,12 @@ function nearestRisk(position: Position) {
 
 function normalizeTicker(value: string) {
   const symbol = value
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
     .replace(/[-_]/g, '')
     .replace(/\/?(USD|USDT|USDC)$/i, '')
-    .replace(/\s/g, '')
-    .toUpperCase();
+    .replace(/\/+$/g, '');
 
   return TICKER_ALIASES[symbol] ?? symbol;
 }
@@ -390,6 +392,7 @@ export default function LiquidationTrackerScreen() {
   }, [positions]);
 
   useEffect(() => {
+    refreshPrices();
     const interval = window.setInterval(refreshPrices, REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
